@@ -9,6 +9,7 @@ let currentVersion = 'circle_plus';
 let savedTracks = []; // Holds all saved track objects: { id, name, category, constant, achievement, comboMark, rating, exact, rank }
 let activeFilter = 'all'; // 'all', 'new', 'old'
 let validStepPoints = []; // Holds achievement points that ACTUALLY upgrade single chart rating
+const SETTINGS_STORAGE_KEY = 'maimai_calculator_settings_v1';
 
 // Dictionary for Internationalization (i18n)
 const i18n = {
@@ -80,7 +81,12 @@ const i18n = {
     currentAchieveStep: '현재 달성률',
     tabAll: '전체 (Best 50)',
     tabNew: '신곡 枠 (Top 15)',
-    tabOld: '구곡 枠 (Top 35)'
+    tabOld: '구곡 枠 (Top 35)',
+    best50Count: '신곡 {newCount}/15 | 구곡 {oldCount}/35 (총 {totalCount}/50 트랙)',
+    categoryNew: '신곡',
+    categoryOld: '구곡',
+    importSuccess: 'JSON 데이터를 성공적으로 가져왔습니다!',
+    importInvalid: '올바른 Best 50 JSON 파일이 아닙니다.'
   },
   en: {
     subtitle: 'maimai DX CIRCLE PLUS DX Rating & Scoring Optimization Tool',
@@ -150,7 +156,12 @@ const i18n = {
     currentAchieveStep: 'Current Achieve',
     tabAll: 'All (Best 50)',
     tabNew: 'New Charts (Top 15)',
-    tabOld: 'Old Charts (Top 35)'
+    tabOld: 'Old Charts (Top 35)',
+    best50Count: 'New {newCount}/15 | Old {oldCount}/35 ({totalCount}/50 tracks total)',
+    categoryNew: 'New',
+    categoryOld: 'Old',
+    importSuccess: 'JSON data imported successfully!',
+    importInvalid: 'This is not a valid Best 50 JSON file.'
   }
 };
 
@@ -280,6 +291,7 @@ function getTierInfo(ratingVal, isTotalRating = false) {
 // App Initialization & DOM Binding
 document.addEventListener('DOMContentLoaded', () => {
   loadSavedTracksFromStorage();
+  loadSettingsFromStorage();
   setupEventListeners();
   applyLanguage();
   updateAll();
@@ -307,6 +319,14 @@ function setupEventListeners() {
   const comboRadios = document.querySelectorAll('input[name="comboMark"]');
   comboRadios.forEach(radio => radio.addEventListener('change', updateAll));
 
+  const versionSelect = document.getElementById('versionSelect');
+  if (versionSelect) {
+    versionSelect.addEventListener('change', () => {
+      currentVersion = versionSelect.value;
+      saveSettingsToStorage();
+    });
+  }
+
   const langToggleBtn = document.getElementById('langToggleBtn');
   if (langToggleBtn) {
     langToggleBtn.addEventListener('click', toggleLanguage);
@@ -329,6 +349,7 @@ function setupEventListeners() {
       filterTabs.forEach(t => t.classList.remove('active'));
       e.target.classList.add('active');
       activeFilter = e.target.getAttribute('data-filter');
+      saveSettingsToStorage();
       renderBest50Table();
     });
   });
@@ -562,6 +583,9 @@ function updateAll() {
 
   // Render Best 50 Summary
   renderBest50Summary();
+
+  // Keep the calculator draft in sync with every user edit.
+  saveSettingsToStorage();
 }
 
 // Render Milestone Cards (S, S+, SS, SS+, SSS, SSS+)
@@ -677,8 +701,10 @@ function renderBest50Summary() {
 
   // Render Total Rating
   document.getElementById('totalRatingValue').innerText = totalRating.toLocaleString();
-  document.getElementById('best50CountText').innerText = 
-    `신곡 ${top15New.length}/15 | 구곡 ${top35Old.length}/35 (총 ${top15New.length + top35Old.length}/50 트랙)`;
+  document.getElementById('best50CountText').innerText = i18n[currentLang].best50Count
+    .replace('{newCount}', top15New.length)
+    .replace('{oldCount}', top35Old.length)
+    .replace('{totalCount}', top15New.length + top35Old.length);
 
   // Update Rating Tier Badge & Progress Bar
   const tierInfo = getTierInfo(totalRating);
@@ -741,7 +767,10 @@ function renderBest50Table() {
 
   tracksToDisplay.forEach((track, index) => {
     const tr = document.createElement('tr');
-    const catBadge = track.category === 'new' ? '<span class="cat-badge new">신곡</span>' : '<span class="cat-badge old">구곡</span>';
+    const isNewTrack = track.category === 'new';
+    const categoryLabel = isNewTrack ? i18n[currentLang].categoryNew : i18n[currentLang].categoryOld;
+    const categoryClass = isNewTrack ? 'new' : 'old';
+    const catBadge = `<span class="cat-badge ${categoryClass}">${categoryLabel}</span>`;
 
     tr.innerHTML = `
       <td class="num-cell">${index + 1}</td>
@@ -778,13 +807,84 @@ function saveTracksToStorage() {
 }
 
 function loadSavedTracksFromStorage() {
-  const data = localStorage.getItem('maimai_saved_tracks');
-  if (data) {
-    try {
+  try {
+    const data = localStorage.getItem('maimai_saved_tracks');
+    if (data) {
       savedTracks = JSON.parse(data);
-    } catch (e) {
-      savedTracks = [];
+      if (!Array.isArray(savedTracks)) savedTracks = [];
     }
+  } catch (e) {
+    savedTracks = [];
+  }
+}
+
+function saveSettingsToStorage() {
+  const trackName = document.getElementById('trackName');
+  const constant = document.getElementById('trackConstant');
+  const achievement = document.getElementById('trackAchievement');
+  const versionSelect = document.getElementById('versionSelect');
+
+  if (!trackName || !constant || !achievement) return;
+
+  const settings = {
+    version: versionSelect?.value || currentVersion,
+    language: currentLang,
+    activeFilter,
+    trackName: trackName.value,
+    category: document.querySelector('input[name="trackCategory"]:checked')?.value || 'new',
+    constant: constant.value,
+    achievement: achievement.value,
+    comboMark: document.querySelector('input[name="comboMark"]:checked')?.value || 'CLEAR'
+  };
+
+  try {
+    localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  } catch (e) {
+    // The calculator remains usable when browser storage is unavailable.
+  }
+}
+
+function loadSettingsFromStorage() {
+  let settings;
+  try {
+    settings = JSON.parse(localStorage.getItem(SETTINGS_STORAGE_KEY));
+  } catch (e) {
+    return;
+  }
+  if (!settings || typeof settings !== 'object') return;
+
+  const versionSelect = document.getElementById('versionSelect');
+  const validVersions = ['circle_plus', 'prism', 'buddies'];
+  if (validVersions.includes(settings.version) && versionSelect) {
+    currentVersion = settings.version;
+    versionSelect.value = settings.version;
+  }
+
+  if (settings.language === 'ko' || settings.language === 'en') {
+    currentLang = settings.language;
+  }
+
+  if (['all', 'new', 'old'].includes(settings.activeFilter)) {
+    activeFilter = settings.activeFilter;
+    document.querySelectorAll('.filter-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.getAttribute('data-filter') === activeFilter);
+    });
+  }
+
+  const trackName = document.getElementById('trackName');
+  const constant = document.getElementById('trackConstant');
+  const achievement = document.getElementById('trackAchievement');
+  if (typeof settings.trackName === 'string' && trackName) trackName.value = settings.trackName;
+  if (typeof settings.constant === 'string' && constant) constant.value = settings.constant;
+  if (typeof settings.achievement === 'string' && achievement) achievement.value = settings.achievement;
+
+  if (settings.category === 'new' || settings.category === 'old') {
+    const categoryRadio = document.querySelector(`input[name="trackCategory"][value="${settings.category}"]`);
+    if (categoryRadio) categoryRadio.checked = true;
+  }
+  if (settings.comboMark === 'CLEAR' || settings.comboMark === 'AP') {
+    const comboRadio = document.querySelector(`input[name="comboMark"][value="${settings.comboMark}"]`);
+    if (comboRadio) comboRadio.checked = true;
   }
 }
 
@@ -811,10 +911,12 @@ function importJSON(e) {
         savedTracks = imported;
         saveTracksToStorage();
         renderBest50Summary();
-        alert('JSON Data Imported Successfully!');
+        alert(i18n[currentLang].importSuccess);
+      } else {
+        alert(i18n[currentLang].importInvalid);
       }
     } catch (err) {
-      alert('Invalid JSON file format.');
+      alert(i18n[currentLang].importInvalid);
     }
   };
   reader.readAsText(file);
@@ -828,6 +930,7 @@ function toggleLanguage() {
 }
 
 function applyLanguage() {
+  document.documentElement.lang = currentLang;
   const langText = document.getElementById('langText');
   if (langText) langText.innerText = currentLang === 'ko' ? '한국어 / EN' : 'EN / 한국어';
 
