@@ -5,7 +5,6 @@
 
 // Global State
 let currentLang = 'ko';
-let currentVersion = 'circle_plus';
 let savedTracks = []; // Holds all saved track objects: { id, name, category, constant, achievement, comboMark, rating, exact, rank }
 let activeFilter = 'all'; // 'all', 'new', 'old'
 let validStepPoints = []; // Holds achievement points that ACTUALLY upgrade single chart rating
@@ -17,7 +16,6 @@ const SETTINGS_STORAGE_KEY = 'maimai_calculator_settings_v1';
 const i18n = {
   ko: {
     subtitle: 'maimai DX CIRCLE PLUS DX 레이팅 계산 & 스코어링 추천 툴',
-    versionLabel: '게임 버전',
     trackInputHeader: '트랙 성과 입력',
     singleTrackMode: '단곡 계산 모드',
     trackNameLabel: '곡명 / 메모 (선택사항)',
@@ -108,7 +106,6 @@ const i18n = {
   },
   en: {
     subtitle: 'maimai DX CIRCLE PLUS DX Rating & Scoring Optimization Tool',
-    versionLabel: 'Game Version',
     trackInputHeader: 'Track Score Entry',
     singleTrackMode: 'Single Track Mode',
     trackNameLabel: 'Track Name / Memo (Optional)',
@@ -353,14 +350,6 @@ function setupEventListeners() {
   const comboRadios = document.querySelectorAll('input[name="comboMark"]');
   comboRadios.forEach(radio => radio.addEventListener('change', updateAll));
 
-  const versionSelect = document.getElementById('versionSelect');
-  if (versionSelect) {
-    versionSelect.addEventListener('change', () => {
-      currentVersion = versionSelect.value;
-      saveSettingsToStorage();
-    });
-  }
-
   const langToggleBtn = document.getElementById('langToggleBtn');
   if (langToggleBtn) {
     langToggleBtn.addEventListener('click', toggleLanguage);
@@ -572,6 +561,8 @@ function updateMatrixCalculation() {
     mark = 'AP';
     isAP = true;
   } else if (totalMiss === 0 && totalGood === 0) {
+    mark = 'FC+';
+  } else if (totalMiss === 0) {
     mark = 'FC';
   }
 
@@ -584,7 +575,14 @@ function updateMatrixCalculation() {
 
   const markEl = document.getElementById('matrixExpectedMark');
   if (markEl) {
-    const markClass = isAP ? 'rank-sss-p' : (mark === 'FC' ? 'rank-s-p' : 'rank-lower');
+    let markClass = 'rank-lower';
+    if (mark === 'AP+' || mark === 'AP') {
+      markClass = 'rank-sss-p';
+    } else if (mark === 'FC+') {
+      markClass = 'rank-ss-p';
+    } else if (mark === 'FC') {
+      markClass = 'rank-s-p';
+    }
     markEl.innerHTML = `<span class="rank-badge ${markClass}">${mark}</span>`;
   }
 
@@ -1058,7 +1056,6 @@ function saveSettingsToStorage() {
   const trackName = document.getElementById('trackName');
   const constant = document.getElementById('trackConstant');
   const achievement = document.getElementById('trackAchievement');
-  const versionSelect = document.getElementById('versionSelect');
 
   if (!trackName || !constant || !achievement) return;
 
@@ -1068,7 +1065,6 @@ function saveSettingsToStorage() {
   });
 
   const settings = {
-    version: versionSelect?.value || currentVersion,
     language: currentLang,
     activeFilter,
     trackName: trackName.value,
@@ -1096,13 +1092,6 @@ function loadSettingsFromStorage() {
     return;
   }
   if (!settings || typeof settings !== 'object') return;
-
-  const versionSelect = document.getElementById('versionSelect');
-  const validVersions = ['circle_plus', 'prism', 'buddies'];
-  if (validVersions.includes(settings.version) && versionSelect) {
-    currentVersion = settings.version;
-    versionSelect.value = settings.version;
-  }
 
   if (settings.language === 'ko' || settings.language === 'en') {
     currentLang = settings.language;
