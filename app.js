@@ -9,6 +9,8 @@ let currentVersion = 'circle_plus';
 let savedTracks = []; // Holds all saved track objects: { id, name, category, constant, achievement, comboMark, rating, exact, rank }
 let activeFilter = 'all'; // 'all', 'new', 'old'
 let validStepPoints = []; // Holds achievement points that ACTUALLY upgrade single chart rating
+let isMatrixExpanded = false;
+let is2500ColumnVisible = false;
 const SETTINGS_STORAGE_KEY = 'maimai_calculator_settings_v1';
 
 // Dictionary for Internationalization (i18n)
@@ -57,6 +59,22 @@ const i18n = {
     tableAction: '삭제',
     footerNotice: 'maimai DX 및 DX RATING은 SEGA Interactive의 상표 및 게임 서비스입니다. 본 서비스는 리듬게임 유저 커뮤니티 데이터 및 나무위키를 바탕으로 제작된 비공식 웹 계산기 툴입니다.',
     
+    // Matrix Calculator texts
+    matrixToggleTitle: '노트 수 & 판정 감점 매트릭스 계산기',
+    chartNoteTotalsTitle: '채보 총 노트 수 입력',
+    chartTotalSummaryText: '총 {total}개 (가중치 {weight})',
+    enable2500Detail: 'BREAK 2500 판정 세부 열 추가',
+    resetDropsBtn: '🔄 감점 초기화',
+    thNoteType: '노트 종류',
+    thP2550: 'PERFECT (2550)',
+    thP2500: 'PERFECT (2500)',
+    thGreat: 'GREAT',
+    thGood: 'GOOD',
+    thMiss: 'MISS',
+    statTotalLoss: '총 감점량',
+    statCalculatedAchieve: '계산 달성률',
+    statExpectedMark: '예상 판정 마크',
+
     // Simulator & Recommendation texts
     previewTitle: '달성률 상승 예상치',
     targetAchieveLabel: '목표 달성률:',
@@ -131,6 +149,22 @@ const i18n = {
     tableRating: 'RATING',
     tableAction: 'Action',
     footerNotice: 'maimai DX & DX RATING are trademarks of SEGA Interactive. Formulas based on maimai community data & Namuwiki.',
+
+    // Matrix Calculator texts
+    matrixToggleTitle: 'Note Totals & Score Loss Matrix Calculator',
+    chartNoteTotalsTitle: 'Chart Note Totals',
+    chartTotalSummaryText: 'Total: {total} (Weight: {weight})',
+    enable2500Detail: 'Add BREAK 2500 Detail Column',
+    resetDropsBtn: '🔄 Reset Drops',
+    thNoteType: 'Note Type',
+    thP2550: 'PERFECT (2550)',
+    thP2500: 'PERFECT (2500)',
+    thGreat: 'GREAT',
+    thGood: 'GOOD',
+    thMiss: 'MISS',
+    statTotalLoss: 'Total Score Loss',
+    statCalculatedAchieve: 'Calculated Achieve',
+    statExpectedMark: 'Expected Mark',
 
     previewTitle: 'Achievement Gain Forecast',
     targetAchieveLabel: 'Target Achieve:',
@@ -354,6 +388,17 @@ function setupEventListeners() {
     });
   });
 
+  // Note Matrix Input Listeners
+  const noteTotalInputs = document.querySelectorAll('.note-total-input');
+  noteTotalInputs.forEach(input => {
+    input.addEventListener('input', updateMatrixCalculation);
+  });
+
+  const dropInputs = document.querySelectorAll('.drop-input');
+  dropInputs.forEach(input => {
+    input.addEventListener('input', updateMatrixCalculation);
+  });
+
   // Import / Export / Clear buttons
   const exportBtn = document.getElementById('exportBtn');
   if (exportBtn) exportBtn.addEventListener('click', exportJSON);
@@ -367,6 +412,197 @@ function setupEventListeners() {
 
   const clearBest50Btn = document.getElementById('clearBest50Btn');
   if (clearBest50Btn) clearBest50Btn.addEventListener('click', clearAllTracks);
+}
+
+// Matrix Section Handlers
+window.toggleMatrixSection = function() {
+  isMatrixExpanded = !isMatrixExpanded;
+  const content = document.getElementById('matrixContentArea');
+  const arrow = document.getElementById('matrixToggleArrow');
+  if (content) content.style.display = isMatrixExpanded ? 'flex' : 'none';
+  if (arrow) arrow.innerText = isMatrixExpanded ? '▲' : '▼';
+  if (isMatrixExpanded) {
+    updateMatrixCalculation();
+  }
+  saveSettingsToStorage();
+};
+
+window.toggle2500Column = function(checked) {
+  is2500ColumnVisible = checked;
+  const colElements = document.querySelectorAll('.col-detail-2500');
+  colElements.forEach(el => {
+    el.style.display = checked ? '' : 'none';
+  });
+  if (!checked) {
+    const drop2500 = document.getElementById('drop_break_p2500');
+    if (drop2500) drop2500.value = 0;
+  }
+  updateMatrixCalculation();
+  saveSettingsToStorage();
+};
+
+window.resetMatrixDrops = function() {
+  document.querySelectorAll('.drop-input').forEach(input => {
+    input.value = 0;
+  });
+  updateMatrixCalculation();
+};
+
+// Calculate Unit Score Loss & Compute Achievement from Actual Drops
+function updateMatrixCalculation() {
+  const getInt = (id) => Math.max(0, parseInt(document.getElementById(id)?.value) || 0);
+
+  // 1. Chart Note Totals
+  const nTap = getInt('chart_total_tap');
+  const nHold = getInt('chart_total_hold');
+  const nSlide = getInt('chart_total_slide');
+  const nTouch = getInt('chart_total_touch');
+  const nBreak = getInt('chart_total_break');
+
+  const totalNotes = nTap + nHold + nSlide + nTouch + nBreak;
+  const totalBaseWeight = (1 * nTap) + (2 * nHold) + (3 * nSlide) + (1 * nTouch) + (5 * nBreak);
+
+  const summaryText = document.getElementById('chartTotalSummaryText');
+  if (summaryText) {
+    const tmpl = i18n[currentLang].chartTotalSummaryText || '총 {total}개 (가중치 {weight})';
+    summaryText.innerText = tmpl.replace('{total}', totalNotes).replace('{weight}', totalBaseWeight);
+  }
+
+  // 2. Unit Loss Calculations (Loss in % for ONE occurrence)
+  const w = totalBaseWeight > 0 ? totalBaseWeight : 1;
+  const b = nBreak > 0 ? nBreak : 1;
+
+  const unitLoss = {
+    tap: {
+      gr: (0.2 / w) * 100,
+      gd: (0.5 / w) * 100,
+      ms: (1.0 / w) * 100
+    },
+    hold: {
+      gr: (0.4 / w) * 100,
+      gd: (1.0 / w) * 100,
+      ms: (2.0 / w) * 100
+    },
+    slide: {
+      gr: (0.6 / w) * 100,
+      gd: (1.5 / w) * 100,
+      ms: (3.0 / w) * 100
+    },
+    touch: {
+      gr: (0.2 / w) * 100,
+      gd: (0.5 / w) * 100,
+      ms: (1.0 / w) * 100
+    },
+    break: {
+      p2550: (0.5 / b),
+      p2500: (1.0 / b),
+      gr: ((1.0 / w) * 100) + (1.0 / b),
+      gd: ((3.0 / w) * 100) + (1.0 / b),
+      ms: ((5.0 / w) * 100) + (1.0 / b)
+    }
+  };
+
+  // Update UI Unit Loss tags
+  const setTag = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.innerText = `-${val.toFixed(4)}%`;
+  };
+
+  setTag('loss_tap_gr', unitLoss.tap.gr);
+  setTag('loss_tap_gd', unitLoss.tap.gd);
+  setTag('loss_tap_ms', unitLoss.tap.ms);
+
+  setTag('loss_hold_gr', unitLoss.hold.gr);
+  setTag('loss_hold_gd', unitLoss.hold.gd);
+  setTag('loss_hold_ms', unitLoss.hold.ms);
+
+  setTag('loss_slide_gr', unitLoss.slide.gr);
+  setTag('loss_slide_gd', unitLoss.slide.gd);
+  setTag('loss_slide_ms', unitLoss.slide.ms);
+
+  setTag('loss_touch_gr', unitLoss.touch.gr);
+  setTag('loss_touch_gd', unitLoss.touch.gd);
+  setTag('loss_touch_ms', unitLoss.touch.ms);
+
+  setTag('loss_break_p2550', unitLoss.break.p2550);
+  setTag('loss_break_p2500', unitLoss.break.p2500);
+  setTag('loss_break_gr', unitLoss.break.gr);
+  setTag('loss_break_gd', unitLoss.break.gd);
+  setTag('loss_break_ms', unitLoss.break.ms);
+
+  // 3. Actual Drops Input by User
+  const drops = {
+    tap: { gr: getInt('drop_tap_gr'), gd: getInt('drop_tap_gd'), ms: getInt('drop_tap_ms') },
+    hold: { gr: getInt('drop_hold_gr'), gd: getInt('drop_hold_gd'), ms: getInt('drop_hold_ms') },
+    slide: { gr: getInt('drop_slide_gr'), gd: getInt('drop_slide_gd'), ms: getInt('drop_slide_ms') },
+    touch: { gr: getInt('drop_touch_gr'), gd: getInt('drop_touch_gd'), ms: getInt('drop_touch_ms') },
+    break: {
+      p2550: getInt('drop_break_p2550'),
+      p2500: is2500ColumnVisible ? getInt('drop_break_p2500') : 0,
+      gr: getInt('drop_break_gr'),
+      gd: getInt('drop_break_gd'),
+      ms: getInt('drop_break_ms')
+    }
+  };
+
+  // 4. Calculate Total Loss
+  const totalLoss =
+    (drops.tap.gr * unitLoss.tap.gr) + (drops.tap.gd * unitLoss.tap.gd) + (drops.tap.ms * unitLoss.tap.ms) +
+    (drops.hold.gr * unitLoss.hold.gr) + (drops.hold.gd * unitLoss.hold.gd) + (drops.hold.ms * unitLoss.hold.ms) +
+    (drops.slide.gr * unitLoss.slide.gr) + (drops.slide.gd * unitLoss.slide.gd) + (drops.slide.ms * unitLoss.slide.ms) +
+    (drops.touch.gr * unitLoss.touch.gr) + (drops.touch.gd * unitLoss.touch.gd) + (drops.touch.ms * unitLoss.touch.ms) +
+    (drops.break.p2550 * unitLoss.break.p2550) + (drops.break.p2500 * unitLoss.break.p2500) +
+    (drops.break.gr * unitLoss.break.gr) + (drops.break.gd * unitLoss.break.gd) + (drops.break.ms * unitLoss.break.ms);
+
+  let finalAchieve = 101.0000 - totalLoss;
+  finalAchieve = Math.min(101.0000, Math.max(0.0000, Math.floor(finalAchieve * 10000) / 10000));
+
+  // Determine Combo / AP Mark
+  const totalMiss = drops.tap.ms + drops.hold.ms + drops.slide.ms + drops.touch.ms + drops.break.ms;
+  const totalGood = drops.tap.gd + drops.hold.gd + drops.slide.gd + drops.touch.gd + drops.break.gd;
+  const totalGreat = drops.tap.gr + drops.hold.gr + drops.slide.gr + drops.touch.gr + drops.break.gr;
+  const totalP = drops.break.p2550 + drops.break.p2500;
+
+  let mark = 'CLEAR';
+  let isAP = false;
+  if (totalMiss === 0 && totalGood === 0 && totalGreat === 0 && totalP === 0) {
+    mark = 'AP+';
+    isAP = true;
+  } else if (totalMiss === 0 && totalGood === 0 && totalGreat === 0) {
+    mark = 'AP';
+    isAP = true;
+  } else if (totalMiss === 0 && totalGood === 0) {
+    mark = 'FC';
+  }
+
+  // Update Matrix Summary Display
+  const lossEl = document.getElementById('matrixTotalLoss');
+  if (lossEl) lossEl.innerText = `-${totalLoss.toFixed(4)}%`;
+
+  const achieveEl = document.getElementById('matrixFinalAchieve');
+  if (achieveEl) achieveEl.innerText = `${finalAchieve.toFixed(4)}%`;
+
+  const markEl = document.getElementById('matrixExpectedMark');
+  if (markEl) {
+    const markClass = isAP ? 'rank-sss-p' : (mark === 'FC' ? 'rank-s-p' : 'rank-lower');
+    markEl.innerHTML = `<span class="rank-badge ${markClass}">${mark}</span>`;
+  }
+
+  // Sync with main Achievement input & Combo Mark radio when matrix is open or edited
+  const achieveInput = document.getElementById('trackAchievement');
+  if (achieveInput && isMatrixExpanded) {
+    achieveInput.value = finalAchieve.toFixed(4);
+  }
+
+  const comboMarkRadios = document.querySelectorAll('input[name="comboMark"]');
+  if (isMatrixExpanded) {
+    comboMarkRadios.forEach(radio => {
+      if (radio.value === 'AP') radio.checked = isAP;
+      if (radio.value === 'CLEAR') radio.checked = !isAP;
+    });
+  }
+
+  updateAll();
 }
 
 // Preset Handlers
@@ -826,6 +1062,11 @@ function saveSettingsToStorage() {
 
   if (!trackName || !constant || !achievement) return;
 
+  const matrixInputs = {};
+  document.querySelectorAll('.note-total-input, .drop-input').forEach(input => {
+    matrixInputs[input.id] = input.value;
+  });
+
   const settings = {
     version: versionSelect?.value || currentVersion,
     language: currentLang,
@@ -834,7 +1075,10 @@ function saveSettingsToStorage() {
     category: document.querySelector('input[name="trackCategory"]:checked')?.value || 'new',
     constant: constant.value,
     achievement: achievement.value,
-    comboMark: document.querySelector('input[name="comboMark"]:checked')?.value || 'CLEAR'
+    comboMark: document.querySelector('input[name="comboMark"]:checked')?.value || 'CLEAR',
+    isMatrixExpanded,
+    is2500ColumnVisible,
+    matrixInputs
   };
 
   try {
@@ -886,6 +1130,33 @@ function loadSettingsFromStorage() {
     const comboRadio = document.querySelector(`input[name="comboMark"][value="${settings.comboMark}"]`);
     if (comboRadio) comboRadio.checked = true;
   }
+
+  if (settings.matrixInputs && typeof settings.matrixInputs === 'object') {
+    Object.keys(settings.matrixInputs).forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = settings.matrixInputs[id];
+    });
+  }
+
+  if (typeof settings.is2500ColumnVisible === 'boolean') {
+    is2500ColumnVisible = settings.is2500ColumnVisible;
+    const chk = document.getElementById('checkDetailed2500');
+    if (chk) chk.checked = is2500ColumnVisible;
+    const colElements = document.querySelectorAll('.col-detail-2500');
+    colElements.forEach(el => {
+      el.style.display = is2500ColumnVisible ? '' : 'none';
+    });
+  }
+
+  if (typeof settings.isMatrixExpanded === 'boolean' && settings.isMatrixExpanded) {
+    isMatrixExpanded = true;
+    const content = document.getElementById('matrixContentArea');
+    const arrow = document.getElementById('matrixToggleArrow');
+    if (content) content.style.display = 'flex';
+    if (arrow) arrow.innerText = '▲';
+  }
+
+  updateMatrixCalculation();
 }
 
 // JSON Import / Export

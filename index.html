@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,9 +8,12 @@
   <!-- Google Fonts: Noto Sans KR & Rajdhani -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap" rel="stylesheet">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;600;700&family=Rajdhani:wght@600;700&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <div class="app-container">
     <!-- Header -->
@@ -58,7 +62,8 @@
             <div class="label-row">
               <label for="trackName" data-i18n="trackNameLabel">곡명 / 메모 (선택사항)</label>
             </div>
-            <input type="text" id="trackName" class="cyber-input" data-i18n-placeholder="trackNamePlaceholder" placeholder="예: FREEDOM DiVE, 14.7, Master 등">
+            <input type="text" id="trackName" class="cyber-input" data-i18n-placeholder="trackNamePlaceholder"
+              placeholder="예: FREEDOM DiVE, 14.7, Master 등">
           </div>
 
           <!-- Track Category: New vs Old Song -->
@@ -89,7 +94,8 @@
               <span class="input-hint" data-i18n="levelHint">범위: 1.0 - 15.4</span>
             </div>
             <div class="level-input-container">
-              <input type="number" id="trackConstant" class="cyber-input level-input" min="1.0" max="15.5" step="0.1" value="14.0" required>
+              <input type="number" id="trackConstant" class="cyber-input level-input" min="1.0" max="15.5" step="0.1"
+                value="14.0" required>
               <div class="quick-level-presets">
                 <button type="button" class="preset-chip" onclick="setConstant(13.0)">13.0</button>
                 <button type="button" class="preset-chip" onclick="setConstant(13.7)">13.7</button>
@@ -108,7 +114,8 @@
               <span id="scoreRankLabel" class="rank-badge rank-sss-p">SSS+</span>
             </div>
             <div class="score-input-wrapper">
-              <input type="number" id="trackAchievement" class="cyber-input score-input" min="0" max="101.0000" step="0.0001" value="100.5000" required>
+              <input type="number" id="trackAchievement" class="cyber-input score-input" min="0" max="101.0000"
+                step="0.0001" value="100.5000" required>
               <div class="score-formatted" id="scoreFormatted">100.5000%</div>
             </div>
             <div class="quick-score-buttons">
@@ -117,8 +124,245 @@
               <button type="button" class="score-chip" onclick="setAchievement(99.0000)">99.0% (SS)</button>
               <button type="button" class="score-chip" onclick="setAchievement(99.5000)">99.5% (SS+)</button>
               <button type="button" class="score-chip" onclick="setAchievement(100.0000)">100.0% (SSS)</button>
-              <button type="button" class="score-chip highlight" onclick="setAchievement(100.5000)">100.5% (SSS+)</button>
+              <button type="button" class="score-chip highlight" onclick="setAchievement(100.5000)">100.5%
+                (SSS+)</button>
               <button type="button" class="score-chip accent" onclick="setAchievement(101.0000)">101.0% (AP)</button>
+            </div>
+          </div>
+
+          <!-- Toggleable Note Breakdown & Score Loss Matrix Calculator Section -->
+          <div class="note-matrix-section">
+            <button type="button" class="matrix-toggle-btn" id="matrixToggleBtn" onclick="toggleMatrixSection()">
+              <span class="toggle-btn-left">
+                <span class="toggle-icon">📊</span>
+                <span data-i18n="matrixToggleTitle">노트 수 & 판정 감점 매트릭스 계산기</span>
+              </span>
+              <span class="toggle-arrow" id="matrixToggleArrow">▼</span>
+            </button>
+
+            <div id="matrixContentArea" class="matrix-content-area" style="display: none;">
+              <!-- 1. Note Totals Input Row -->
+              <div class="matrix-totals-block">
+                <div class="totals-block-header">
+                  <span class="totals-title" data-i18n="chartNoteTotalsTitle">채보 총 노트 수 입력</span>
+                  <span class="totals-summary-badge" id="chartTotalSummaryText">총 610개 (가중치 810)</span>
+                </div>
+                <div class="totals-input-grid">
+                  <div class="total-input-item">
+                    <label for="chart_total_tap" class="total-badge badge-tap">TAP</label>
+                    <input type="number" id="chart_total_tap" class="cyber-input note-total-input" min="0" step="1" value="500">
+                  </div>
+                  <div class="total-input-item">
+                    <label for="chart_total_hold" class="total-badge badge-hold">HOLD</label>
+                    <input type="number" id="chart_total_hold" class="cyber-input note-total-input" min="0" step="1" value="50">
+                  </div>
+                  <div class="total-input-item">
+                    <label for="chart_total_slide" class="total-badge badge-slide">SLIDE</label>
+                    <input type="number" id="chart_total_slide" class="cyber-input note-total-input" min="0" step="1" value="30">
+                  </div>
+                  <div class="total-input-item">
+                    <label for="chart_total_touch" class="total-badge badge-touch">TOUCH</label>
+                    <input type="number" id="chart_total_touch" class="cyber-input note-total-input" min="0" step="1" value="20">
+                  </div>
+                  <div class="total-input-item">
+                    <label for="chart_total_break" class="total-badge badge-break">BREAK</label>
+                    <input type="number" id="chart_total_break" class="cyber-input note-total-input" min="0" step="1" value="10">
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Controls & 2500 Checkbox -->
+              <div class="matrix-options-bar">
+                <label class="matrix-checkbox-label">
+                  <input type="checkbox" id="checkDetailed2500" onchange="toggle2500Column(this.checked)">
+                  <span class="custom-checkbox"></span>
+                  <span class="checkbox-text" data-i18n="enable2500Detail">BREAK 2500 판정 세부 열 추가</span>
+                </label>
+                <button type="button" class="preset-chip" onclick="resetMatrixDrops()" data-i18n="resetDropsBtn">🔄 감점 초기화</button>
+              </div>
+
+              <!-- 3. Loss Matrix & Actual Drops Table -->
+              <div class="matrix-table-wrapper">
+                <table class="matrix-table">
+                  <thead>
+                    <tr>
+                      <th class="col-type" data-i18n="thNoteType">노트 종류</th>
+                      <th class="col-p2550" id="th_p2550" data-i18n="thP2550">PERFECT (2550)</th>
+                      <th class="col-p2500 col-detail-2500" id="th_p2500" style="display: none;" data-i18n="thP2500">PERFECT (2500)</th>
+                      <th class="col-gr" data-i18n="thGreat">GREAT</th>
+                      <th class="col-gd" data-i18n="thGood">GOOD</th>
+                      <th class="col-ms" data-i18n="thMiss">MISS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <!-- TAP ROW -->
+                    <tr class="row-tap">
+                      <td class="cell-note-title">
+                        <span class="note-type-badge badge-tap">TAP</span>
+                        <span class="note-weight-text">x1</span>
+                      </td>
+                      <td class="cell-disabled">-</td>
+                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_tap_gr">-0.0247%</span>
+                          <input type="number" id="drop_tap_gr" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_tap_gd">-0.0617%</span>
+                          <input type="number" id="drop_tap_gd" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_tap_ms">-0.1235%</span>
+                          <input type="number" id="drop_tap_ms" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- HOLD ROW -->
+                    <tr class="row-hold">
+                      <td class="cell-note-title">
+                        <span class="note-type-badge badge-hold">HOLD</span>
+                        <span class="note-weight-text">x2</span>
+                      </td>
+                      <td class="cell-disabled">-</td>
+                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_hold_gr">-0.0494%</span>
+                          <input type="number" id="drop_hold_gr" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_hold_gd">-0.1235%</span>
+                          <input type="number" id="drop_hold_gd" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_hold_ms">-0.2469%</span>
+                          <input type="number" id="drop_hold_ms" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- SLIDE ROW -->
+                    <tr class="row-slide">
+                      <td class="cell-note-title">
+                        <span class="note-type-badge badge-slide">SLIDE</span>
+                        <span class="note-weight-text">x3</span>
+                      </td>
+                      <td class="cell-disabled">-</td>
+                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_slide_gr">-0.0741%</span>
+                          <input type="number" id="drop_slide_gr" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_slide_gd">-0.1852%</span>
+                          <input type="number" id="drop_slide_gd" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_slide_ms">-0.3704%</span>
+                          <input type="number" id="drop_slide_ms" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- TOUCH ROW -->
+                    <tr class="row-touch">
+                      <td class="cell-note-title">
+                        <span class="note-type-badge badge-touch">TOUCH</span>
+                        <span class="note-weight-text">x1</span>
+                      </td>
+                      <td class="cell-disabled">-</td>
+                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_touch_gr">-0.0247%</span>
+                          <input type="number" id="drop_touch_gr" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_touch_gd">-0.0617%</span>
+                          <input type="number" id="drop_touch_gd" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_touch_ms">-0.1235%</span>
+                          <input type="number" id="drop_touch_ms" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                    </tr>
+
+                    <!-- BREAK ROW -->
+                    <tr class="row-break">
+                      <td class="cell-note-title">
+                        <span class="note-type-badge badge-break">BREAK</span>
+                        <span class="note-weight-text">x5 +1%</span>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_p2550">-0.0500%</span>
+                          <input type="number" id="drop_break_p2550" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td class="col-detail-2500" style="display: none;">
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_p2500">-0.1000%</span>
+                          <input type="number" id="drop_break_p2500" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_gr">-0.2235%</span>
+                          <input type="number" id="drop_break_gr" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_gd">-0.4704%</span>
+                          <input type="number" id="drop_break_gd" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td>
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_ms">-0.7173%</span>
+                          <input type="number" id="drop_break_ms" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- 4. Matrix Summary Result Box -->
+              <div class="matrix-summary-card">
+                <div class="matrix-stat-item">
+                  <span class="stat-label" data-i18n="statTotalLoss">총 감점량</span>
+                  <span class="stat-val highlight" id="matrixTotalLoss">0.0000%</span>
+                </div>
+                <div class="matrix-stat-item">
+                  <span class="stat-label" data-i18n="statCalculatedAchieve">계산 달성률</span>
+                  <span class="stat-val accent" id="matrixFinalAchieve">101.0000%</span>
+                </div>
+                <div class="matrix-stat-item">
+                  <span class="stat-label" data-i18n="statExpectedMark">예상 판정 마크</span>
+                  <span class="stat-val" id="matrixExpectedMark"><span class="rank-badge rank-sss-p">AP+</span></span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -206,7 +450,8 @@
           <!-- Interactive Achievement Range Slider & Live Previewer -->
           <div class="simulator-box">
             <div class="sim-slider-group">
-              <input type="range" id="simAchieveSlider" class="sim-range-slider" min="90.0000" max="100.5000" step="0.0001" value="99.5000">
+              <input type="range" id="simAchieveSlider" class="sim-range-slider" min="90.0000" max="100.5000"
+                step="0.0001" value="99.5000">
             </div>
 
             <!-- Live Achievement Preview Card -->
@@ -316,7 +561,8 @@
 
     <!-- Footer -->
     <footer class="app-footer">
-      <p data-i18n="footerNotice">maimai DX 및 DX RATING은 SEGA Interactive의 상표 및 게임 서비스입니다. 본 서비스는 리듬게임 유저 커뮤니티 데이터 및 나무위키를 바탕으로 제작된 비공식 웹 계산기 툴입니다.</p>
+      <p data-i18n="footerNotice">maimai DX 및 DX RATING은 SEGA Interactive의 상표 및 게임 서비스입니다. 본 서비스는 리듬게임 유저 커뮤니티 데이터 및
+        나무위키를 바탕으로 제작된 비공식 웹 계산기 툴입니다.</p>
     </footer>
   </div>
 
@@ -325,4 +571,5 @@
 
   <script src="app.js"></script>
 </body>
+
 </html>
