@@ -9,7 +9,7 @@ let savedTracks = []; // Holds all saved track objects: { id, name, category, co
 let activeFilter = 'all'; // 'all', 'new', 'old'
 let validStepPoints = []; // Holds achievement points that ACTUALLY upgrade single chart rating
 let isMatrixExpanded = false;
-let is2500ColumnVisible = false;
+let isBreakDetailVisible = false;
 const SETTINGS_STORAGE_KEY = 'maimai_calculator_settings_v1';
 
 // Dictionary for Internationalization (i18n)
@@ -61,12 +61,14 @@ const i18n = {
     matrixToggleTitle: '노트 수 & 판정 감점 매트릭스 계산기',
     chartNoteTotalsTitle: '채보 총 노트 수 입력',
     chartTotalSummaryText: '총 {total}개 (가중치 {weight})',
-    enable2500Detail: 'BREAK 2500 판정 세부 열 추가',
+    checkBreakDetail: 'BREAK 세부 판정 열 표시 (2550, Mid/Low Great)',
     resetDropsBtn: '🔄 감점 초기화',
     thNoteType: '노트 종류',
+    thP2575: 'PERFECT (2575)',
     thP2550: 'PERFECT (2550)',
-    thP2500: 'PERFECT (2500)',
-    thGreat: 'GREAT',
+    thGr2040: 'GREAT (2040)',
+    thGr1540: 'GREAT (1540)',
+    thGr1290: 'GREAT (1290)',
     thGood: 'GOOD',
     thMiss: 'MISS',
     statTotalLoss: '총 감점량',
@@ -151,12 +153,14 @@ const i18n = {
     matrixToggleTitle: 'Note Totals & Score Loss Matrix Calculator',
     chartNoteTotalsTitle: 'Chart Note Totals',
     chartTotalSummaryText: 'Total: {total} (Weight: {weight})',
-    enable2500Detail: 'Add BREAK 2500 Detail Column',
+    checkBreakDetail: 'Show Detailed BREAK Columns (2550, Mid/Low Great)',
     resetDropsBtn: '🔄 Reset Drops',
     thNoteType: 'Note Type',
+    thP2575: 'PERFECT (2575)',
     thP2550: 'PERFECT (2550)',
-    thP2500: 'PERFECT (2500)',
-    thGreat: 'GREAT',
+    thGr2040: 'GREAT (2040)',
+    thGr1540: 'GREAT (1540)',
+    thGr1290: 'GREAT (1290)',
     thGood: 'GOOD',
     thMiss: 'MISS',
     statTotalLoss: 'Total Score Loss',
@@ -388,6 +392,13 @@ function setupEventListeners() {
     input.addEventListener('input', updateMatrixCalculation);
   });
 
+  const toggleBreakDetailCheck = document.getElementById('toggleBreakDetailCheck');
+  if (toggleBreakDetailCheck) {
+    toggleBreakDetailCheck.addEventListener('change', (e) => {
+      toggleBreakDetailColumns(e.target.checked);
+    });
+  }
+
   // Import / Export / Clear buttons
   const exportBtn = document.getElementById('exportBtn');
   if (exportBtn) exportBtn.addEventListener('click', exportJSON);
@@ -416,15 +427,19 @@ window.toggleMatrixSection = function() {
   saveSettingsToStorage();
 };
 
-window.toggle2500Column = function(checked) {
-  is2500ColumnVisible = checked;
-  const colElements = document.querySelectorAll('.col-detail-2500');
+window.toggleBreakDetailColumns = function(checked) {
+  isBreakDetailVisible = checked;
+  const colElements = document.querySelectorAll('.col-detail-break');
   colElements.forEach(el => {
     el.style.display = checked ? '' : 'none';
   });
   if (!checked) {
-    const drop2500 = document.getElementById('drop_break_p2500');
-    if (drop2500) drop2500.value = 0;
+    const drop2550 = document.getElementById('drop_break_p2550');
+    if (drop2550) drop2550.value = 0;
+    const dropGr1540 = document.getElementById('drop_break_gr1540');
+    if (dropGr1540) dropGr1540.value = 0;
+    const dropGr1290 = document.getElementById('drop_break_gr1290');
+    if (dropGr1290) dropGr1290.value = 0;
   }
   updateMatrixCalculation();
   saveSettingsToStorage();
@@ -483,11 +498,13 @@ function updateMatrixCalculation() {
       ms: (1.0 / w) * 100
     },
     break: {
-      p2550: (0.5 / b),
-      p2500: (1.0 / b),
-      gr: ((1.0 / w) * 100) + (1.0 / b),
-      gd: ((3.0 / w) * 100) + (1.0 / b),
-      ms: ((5.0 / w) * 100) + (1.0 / b)
+      p2575: (0.25 / b),
+      p2550: (0.50 / b),
+      gr2040: ((1.0 / w) * 100) + (0.60 / b),
+      gr1540: ((2.0 / w) * 100) + (0.60 / b),
+      gr1290: ((2.5 / w) * 100) + (0.60 / b),
+      gd: ((3.0 / w) * 100) + (0.70 / b),
+      ms: ((5.0 / w) * 100) + (1.00 / b)
     }
   };
 
@@ -513,9 +530,11 @@ function updateMatrixCalculation() {
   setTag('loss_touch_gd', unitLoss.touch.gd);
   setTag('loss_touch_ms', unitLoss.touch.ms);
 
+  setTag('loss_break_p2575', unitLoss.break.p2575);
   setTag('loss_break_p2550', unitLoss.break.p2550);
-  setTag('loss_break_p2500', unitLoss.break.p2500);
-  setTag('loss_break_gr', unitLoss.break.gr);
+  setTag('loss_break_gr2040', unitLoss.break.gr2040);
+  setTag('loss_break_gr1540', unitLoss.break.gr1540);
+  setTag('loss_break_gr1290', unitLoss.break.gr1290);
   setTag('loss_break_gd', unitLoss.break.gd);
   setTag('loss_break_ms', unitLoss.break.ms);
 
@@ -526,9 +545,11 @@ function updateMatrixCalculation() {
     slide: { gr: getInt('drop_slide_gr'), gd: getInt('drop_slide_gd'), ms: getInt('drop_slide_ms') },
     touch: { gr: getInt('drop_touch_gr'), gd: getInt('drop_touch_gd'), ms: getInt('drop_touch_ms') },
     break: {
-      p2550: getInt('drop_break_p2550'),
-      p2500: is2500ColumnVisible ? getInt('drop_break_p2500') : 0,
-      gr: getInt('drop_break_gr'),
+      p2575: getInt('drop_break_p2575'),
+      p2550: isBreakDetailVisible ? getInt('drop_break_p2550') : 0,
+      gr2040: getInt('drop_break_gr2040'),
+      gr1540: isBreakDetailVisible ? getInt('drop_break_gr1540') : 0,
+      gr1290: isBreakDetailVisible ? getInt('drop_break_gr1290') : 0,
       gd: getInt('drop_break_gd'),
       ms: getInt('drop_break_ms')
     }
@@ -540,8 +561,9 @@ function updateMatrixCalculation() {
     (drops.hold.gr * unitLoss.hold.gr) + (drops.hold.gd * unitLoss.hold.gd) + (drops.hold.ms * unitLoss.hold.ms) +
     (drops.slide.gr * unitLoss.slide.gr) + (drops.slide.gd * unitLoss.slide.gd) + (drops.slide.ms * unitLoss.slide.ms) +
     (drops.touch.gr * unitLoss.touch.gr) + (drops.touch.gd * unitLoss.touch.gd) + (drops.touch.ms * unitLoss.touch.ms) +
-    (drops.break.p2550 * unitLoss.break.p2550) + (drops.break.p2500 * unitLoss.break.p2500) +
-    (drops.break.gr * unitLoss.break.gr) + (drops.break.gd * unitLoss.break.gd) + (drops.break.ms * unitLoss.break.ms);
+    (drops.break.p2575 * unitLoss.break.p2575) + (drops.break.p2550 * unitLoss.break.p2550) +
+    (drops.break.gr2040 * unitLoss.break.gr2040) + (drops.break.gr1540 * unitLoss.break.gr1540) + (drops.break.gr1290 * unitLoss.break.gr1290) +
+    (drops.break.gd * unitLoss.break.gd) + (drops.break.ms * unitLoss.break.ms);
 
   let finalAchieve = 101.0000 - totalLoss;
   finalAchieve = Math.min(101.0000, Math.max(0.0000, Math.floor(finalAchieve * 10000) / 10000));
@@ -549,8 +571,8 @@ function updateMatrixCalculation() {
   // Determine Combo / AP Mark
   const totalMiss = drops.tap.ms + drops.hold.ms + drops.slide.ms + drops.touch.ms + drops.break.ms;
   const totalGood = drops.tap.gd + drops.hold.gd + drops.slide.gd + drops.touch.gd + drops.break.gd;
-  const totalGreat = drops.tap.gr + drops.hold.gr + drops.slide.gr + drops.touch.gr + drops.break.gr;
-  const totalP = drops.break.p2550 + drops.break.p2500;
+  const totalGreat = drops.tap.gr + drops.hold.gr + drops.slide.gr + drops.touch.gr + drops.break.gr2040 + drops.break.gr1540 + drops.break.gr1290;
+  const totalP = drops.break.p2575 + drops.break.p2550;
 
   let mark = 'CLEAR';
   let isAP = false;
@@ -1073,7 +1095,7 @@ function saveSettingsToStorage() {
     achievement: achievement.value,
     comboMark: document.querySelector('input[name="comboMark"]:checked')?.value || 'CLEAR',
     isMatrixExpanded,
-    is2500ColumnVisible,
+    isBreakDetailVisible,
     matrixInputs
   };
 
@@ -1127,13 +1149,13 @@ function loadSettingsFromStorage() {
     });
   }
 
-  if (typeof settings.is2500ColumnVisible === 'boolean') {
-    is2500ColumnVisible = settings.is2500ColumnVisible;
-    const chk = document.getElementById('checkDetailed2500');
-    if (chk) chk.checked = is2500ColumnVisible;
-    const colElements = document.querySelectorAll('.col-detail-2500');
+  if (typeof settings.isBreakDetailVisible === 'boolean') {
+    isBreakDetailVisible = settings.isBreakDetailVisible;
+    const chk = document.getElementById('toggleBreakDetailCheck');
+    if (chk) chk.checked = isBreakDetailVisible;
+    const colElements = document.querySelectorAll('.col-detail-break');
     colElements.forEach(el => {
-      el.style.display = is2500ColumnVisible ? '' : 'none';
+      el.style.display = isBreakDetailVisible ? '' : 'none';
     });
   }
 

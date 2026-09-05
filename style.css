@@ -1219,7 +1219,7 @@ body {
   border-collapse: collapse;
   font-size: 0.8rem;
   text-align: center;
-  min-width: 440px;
+  min-width: 500px;
 }
 
 .matrix-table th {

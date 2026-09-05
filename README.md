@@ -32,9 +32,9 @@ maimai DX 유저를 위한 **DX Rating (디럭스 레이팅)** 웹 계산기 및
 ### 5. 노트별 스코어 감점 매트릭스 & 달성률 역산 계산기 (Note Breakdown & Loss Matrix)
 - **토글형 아코디언**: 달성률 입력창 하단에서 '노트별 감점 매트릭스 열기/접기' 토글 가능
 - **총 노트수 입력**: TAP, HOLD, SLIDE, TOUCH, BREAK 노트수를 각각 입력하여 채보의 총 가중치($W_{\text{total}}$) 자동 계산
-- **1개당 감점치 매트릭스 실시간 표시**: 각 노트별 Perfect(Break), Great, Good, Miss 1개 발생 시 깎이는 달성률(%)을 소수점 4자리로 정확히 확인
+- **1개당 감점치 매트릭스 실시간 표시**: 각 판정 발생 시 깎이는 달성률(%)을 소수점 4자리로 정확히 확인
 - **플레이 결과(미스 수) 입력 & 달성률 즉시 반영**: 발생한 판정 이탈 개수를 입력하면 $101.0000\% - \text{총 감점}$으로 계산된 최종 달성률이 메인 달성률 입력창 및 단곡 레이팅, Best 50에 즉시 실시간 동기화
-- **BREAK 2500(Late/Early P) 세부 계산 옵션**: 체크박스 선택 시 BREAK 2500 판정 전용 입력 열이 활성화되어 더 정밀한 달성률 계산 가능
+- **BREAK 세부 판정 옵션 (2550, Mid/Low Great)**: 기본 모드에서는 최대치(2575 Perfect, 2040 High Great)로 간소화 표시되며, 체크박스 활성화 시 2550 Low Perfect, 1540 Mid Great, 1290 Low Great 열이 추가되어 초정밀 역산 지원
 
 ### 6. 한국어 / 영어 다국어 지원 (i18n)
 - 우측 상단 언어 전환 버튼으로 한국어 / 영어 100% 실시간 전환
@@ -50,12 +50,15 @@ maimai DX 유저를 위한 **DX Rating (디럭스 레이팅)** 웹 계산기 및
   - **TAP, TOUCH (가중치 1)**: Great $-0.2 / W \times 100\%$, Good $-0.5 / W \times 100\%$, Miss $-1.0 / W \times 100\%$
   - **HOLD (가중치 2)**: Great $-0.4 / W \times 100\%$, Good $-1.0 / W \times 100\%$, Miss $-2.0 / W \times 100\%$
   - **SLIDE (가중치 3)**: Great $-0.6 / W \times 100\%$, Good $-1.5 / W \times 100\%$, Miss $-3.0 / W \times 100\%$
-  - **BREAK (기본 가중치 5 + 1% 보너스)**:
-    - 2550 (Critical Perfect 대비 Perfect 감점): $-0.5\% / N_{\text{break}}$
-    - 2500 (Late/Early Perfect 감점, 옵션 활성화 시): $-1.0\% / N_{\text{break}}$
-    - Great (2000): $-(1.0 / W \times 100 + 1.0 / N_{\text{break}})\%$
-    - Good (1000): $-(3.0 / W \times 100 + 1.0 / N_{\text{break}})\%$
-    - Miss (0): $-(5.0 / W \times 100 + 1.0 / N_{\text{break}})\%$
+  - **BREAK (기본 점수 2500[가중치 5] + 1% 보너스[100점])**:
+    - **Critical Perfect (16ms / 2600점)**: 기본 2500 + 보너스 100 $\rightarrow$ 감점 **0.0000%**
+    - **High Perfect (33ms / 2575점)** [기본 열]: 기본 2500 + 보너스 75 $\rightarrow$ $-0.25\% / N_{\text{break}}$
+    - **Low Perfect (50ms / 2550점)** [세부 열]: 기본 2500 + 보너스 50 $\rightarrow$ $-0.50\% / N_{\text{break}}$
+    - **High Great (66ms / 2040점)** [기본 열]: 기본 2000 + 보너스 40 $\rightarrow$ $-(1.0 / W \times 100 + 0.60 / N_{\text{break}})\%$
+    - **Mid Great (83ms / 1540점)** [세부 열]: 기본 1500 + 보너스 40 $\rightarrow$ $-(2.0 / W \times 100 + 0.60 / N_{\text{break}})\%$
+    - **Low Great (100ms / 1290점)** [세부 열]: 기본 1250 + 보너스 40 $\rightarrow$ $-(2.5 / W \times 100 + 0.60 / N_{\text{break}})\%$
+    - **Good (150ms / 1030점)**: 기본 1000 + 보너스 30 $\rightarrow$ $-(3.0 / W \times 100 + 0.70 / N_{\text{break}})\%$
+    - **Miss (0점)**: 기본 0 + 보너스 0 $\rightarrow$ $-(5.0 / W \times 100 + 1.00 / N_{\text{break}})\%$
 
 ## DX 레이팅 계산 공식 (Formula)
 

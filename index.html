@@ -161,25 +161,27 @@
                 </div>
               </div>
 
-              <!-- 2. Controls & 2500 Checkbox -->
+              <!-- 2. Controls & Break Detail Checkbox -->
               <div class="matrix-options-bar">
                 <label class="matrix-checkbox-label">
-                  <input type="checkbox" id="checkDetailed2500" onchange="toggle2500Column(this.checked)">
+                  <input type="checkbox" id="toggleBreakDetailCheck">
                   <span class="custom-checkbox"></span>
-                  <span class="checkbox-text" data-i18n="enable2500Detail">BREAK 2500 판정 세부 열 추가</span>
+                  <span class="checkbox-text" data-i18n="checkBreakDetail">BREAK 세부 판정 열 표시 (2550, Mid/Low Great)</span>
                 </label>
                 <button type="button" class="preset-chip" onclick="resetMatrixDrops()" data-i18n="resetDropsBtn">🔄 감점 초기화</button>
               </div>
 
               <!-- 3. Loss Matrix & Actual Drops Table -->
               <div class="matrix-table-wrapper">
-                <table class="matrix-table">
+                <table class="matrix-table" id="matrixTable">
                   <thead>
                     <tr>
                       <th class="col-type" data-i18n="thNoteType">노트 종류</th>
-                      <th class="col-p2550" id="th_p2550" data-i18n="thP2550">PERFECT (2550)</th>
-                      <th class="col-p2500 col-detail-2500" id="th_p2500" style="display: none;" data-i18n="thP2500">PERFECT (2500)</th>
-                      <th class="col-gr" data-i18n="thGreat">GREAT</th>
+                      <th class="col-p2575" id="th_p2575" data-i18n="thP2575">PERFECT (2575)</th>
+                      <th class="col-p2550 col-detail-break" id="th_p2550" style="display: none;" data-i18n="thP2550">PERFECT (2550)</th>
+                      <th class="col-gr2040" id="th_gr2040" data-i18n="thGr2040">GREAT (2040)</th>
+                      <th class="col-gr1540 col-detail-break" id="th_gr1540" style="display: none;" data-i18n="thGr1540">GREAT (1540)</th>
+                      <th class="col-gr1290 col-detail-break" id="th_gr1290" style="display: none;" data-i18n="thGr1290">GREAT (1290)</th>
                       <th class="col-gd" data-i18n="thGood">GOOD</th>
                       <th class="col-ms" data-i18n="thMiss">MISS</th>
                     </tr>
@@ -192,13 +194,15 @@
                         <span class="note-weight-text">x1</span>
                       </td>
                       <td class="cell-disabled">-</td>
-                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_tap_gr">-0.0247%</span>
                           <input type="number" id="drop_tap_gr" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_tap_gd">-0.0617%</span>
@@ -220,13 +224,15 @@
                         <span class="note-weight-text">x2</span>
                       </td>
                       <td class="cell-disabled">-</td>
-                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_hold_gr">-0.0494%</span>
                           <input type="number" id="drop_hold_gr" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_hold_gd">-0.1235%</span>
@@ -248,13 +254,15 @@
                         <span class="note-weight-text">x3</span>
                       </td>
                       <td class="cell-disabled">-</td>
-                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_slide_gr">-0.0741%</span>
                           <input type="number" id="drop_slide_gr" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_slide_gd">-0.1852%</span>
@@ -276,13 +284,15 @@
                         <span class="note-weight-text">x1</span>
                       </td>
                       <td class="cell-disabled">-</td>
-                      <td class="cell-disabled col-detail-2500" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_touch_gr">-0.0247%</span>
                           <input type="number" id="drop_touch_gr" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
+                      <td class="cell-disabled col-detail-break" style="display: none;">-</td>
                       <td>
                         <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_touch_gd">-0.0617%</span>
@@ -305,25 +315,37 @@
                       </td>
                       <td>
                         <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_p2575">-0.0250%</span>
+                          <input type="number" id="drop_break_p2575" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td class="col-detail-break" style="display: none;">
+                        <div class="matrix-cell-content">
                           <span class="unit-loss-tag" id="loss_break_p2550">-0.0500%</span>
                           <input type="number" id="drop_break_p2550" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
-                      <td class="col-detail-2500" style="display: none;">
+                      <td>
                         <div class="matrix-cell-content">
-                          <span class="unit-loss-tag" id="loss_break_p2500">-0.1000%</span>
-                          <input type="number" id="drop_break_p2500" class="cyber-input drop-input" min="0" step="1" value="0">
+                          <span class="unit-loss-tag" id="loss_break_gr2040">-0.1835%</span>
+                          <input type="number" id="drop_break_gr2040" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td class="col-detail-break" style="display: none;">
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_gr1540">-0.3069%</span>
+                          <input type="number" id="drop_break_gr1540" class="cyber-input drop-input" min="0" step="1" value="0">
+                        </div>
+                      </td>
+                      <td class="col-detail-break" style="display: none;">
+                        <div class="matrix-cell-content">
+                          <span class="unit-loss-tag" id="loss_break_gr1290">-0.3687%</span>
+                          <input type="number" id="drop_break_gr1290" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
                       <td>
                         <div class="matrix-cell-content">
-                          <span class="unit-loss-tag" id="loss_break_gr">-0.2235%</span>
-                          <input type="number" id="drop_break_gr" class="cyber-input drop-input" min="0" step="1" value="0">
-                        </div>
-                      </td>
-                      <td>
-                        <div class="matrix-cell-content">
-                          <span class="unit-loss-tag" id="loss_break_gd">-0.4704%</span>
+                          <span class="unit-loss-tag" id="loss_break_gd">-0.4404%</span>
                           <input type="number" id="drop_break_gd" class="cyber-input drop-input" min="0" step="1" value="0">
                         </div>
                       </td>
